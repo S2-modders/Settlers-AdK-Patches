@@ -26,7 +26,7 @@ struct threadData {
     char BannerURL_3[URLMAX]; // unknown
 };
 
-const int version_maj = 1;
-const int version_min = 4;
+const int version_maj = 0;
+const int version_min = 1;
 
 DWORD WINAPI ZoomPatchThread(LPVOID param);

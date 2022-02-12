@@ -12,52 +12,18 @@
 
 /* memory values */
 
-/* DnG Base game (11757) */
-memoryPTR MaxZoomPTR_base = {
-    0x002BD4E8,
-    2,
-    { 0x4C, 0x1A8 }
-};
-memoryPTR CurrZoomPTR_base = {
-    0x002BD4E8,
-    2,
-    { 0x4C, 0x1A4 }
-};
-memoryPTR WorldObjectPTR_base = {
-    0x002BD4E8,
-    1,
-    { 0x4C }
-};
-
-/* DnG Wikinger Addon (11758) */
-memoryPTR MaxZoomPTR_addon = {
-    0x002CA528,
-    2,
-    { 0x4C, 0x1BC }
-};
-memoryPTR CurrZoomPTR_addon = {
-    0x002CA528,
-    2,
-    { 0x4C, 0x1B8 }
-};
-memoryPTR WorldObjectPTR_addon = {
-    0x002CA528,
-    1,
-    { 0x4C }
-};
-
 /* RoC / AdK (34688) */
-memoryPTR MaxZoomPTR_adk = {
+memoryPTR MaxZoomPTR = {
     0x0048CD54,
     2,
     { 0x50, 0x2E4 }
 };
-memoryPTR CurrZoomPTR_adk = {
+memoryPTR CurrZoomPTR = {
     0x0048CD54,
     2,
     { 0x50, 0x2E0 }
 };
-memoryPTR WorldObjectPTR_adk = {
+memoryPTR WorldObjectPTR = {
     0x0048CD54,
     1,
     { 0x50 }
@@ -68,8 +34,6 @@ DWORD ADKBannerURL1 = 0x104513;
 DWORD ADKBannerURL2 = 0x104592;
 DWORD ADKBannerURL3 = 0x104602;
 
-DWORD BaseGameVersionAddr = 0x2C5A30;
-DWORD AddonGameVersionAddr = 0x2D2DB8;
 DWORD ADKGameVersionAddr = 0x495800;
 
 /*###################################*/
@@ -191,8 +155,6 @@ bool checkSettlersII(char* versionString) {
 }
 
 bool checkSettlersVersion(char* versionString) {
-    char versionBase[15] = "Version: 11757"; // GOG version & patched CD version + NOCD
-    char versionAddon[15] = "Version: 11758"; // Wikings Addon + NOCD
     char versionADK[15] = "Version: 34688"; // Rise of Cultures / Aufbruch der Kulturen
     char gameVersion[15];
 
@@ -203,9 +165,7 @@ bool checkSettlersVersion(char* versionString) {
 
     showMessage(gameVersion);
 
-    if (strcmp(gameVersion, versionBase) != 0
-            && strcmp(gameVersion, versionAddon) != 0
-            && strcmp(gameVersion, versionADK) != 0)
+    if (strcmp(gameVersion, versionADK) != 0)
         return false;
     else
         return true;
@@ -340,7 +300,7 @@ int MainLoop(memoryPTR& WorldObjectPTR,
             return 0;
     }
 
-    while (true) {
+    for (;; Sleep(1000)) {
         worldObj = (float*)(tracePointer(&WorldObjectPTR));
 
         if (tData->bDebugMode) {
@@ -381,12 +341,10 @@ int MainLoop(memoryPTR& WorldObjectPTR,
             }
         }
 
-        Sleep(1000);
     }
 }
 
 int MainEntry(threadData* tData) {
-    Sleep(1000);
     FILE* f;
 
     if (tData->bDebugMode) {
@@ -394,36 +352,24 @@ int MainEntry(threadData* tData) {
         freopen_s(&f, "CONOUT$", "w", stdout);
         startupMessage();
     }
+
+    /* Banner patch has to be done as early as possible */
+    if (tData->bBannerPatch)
+        AdKBannerPatch(tData);
+
     /* wait a bit for the application to start up (might crash otherwise) */
     Sleep(2000);
 
     /* check if gameVersion is supported */
-    char* sBase = (char*)((DWORD)getBaseAddress() + BaseGameVersionAddr);
-    char* sAddon = (char*)((DWORD)getBaseAddress() + AddonGameVersionAddr);
     char* sADK = (char*)((DWORD)getBaseAddress() + ADKGameVersionAddr);
     bool bSupported = false;
 
     for (int i = 0; i < 8; i++) {
-        if (checkSettlersII(sBase) || checkSettlersII(sAddon) || checkSettlersII(sADK)) {
-            if (checkSettlersVersion(sBase)) {
-                showMessage("Found Base version.");
-                bSupported = true;
-                return MainLoop(WorldObjectPTR_base, MaxZoomPTR_base, CurrZoomPTR_base, tData);
-            }
-            else if (checkSettlersVersion(sAddon)) {
-                showMessage("Found Addon version.");
-                bSupported = true;
-                return MainLoop(WorldObjectPTR_addon, MaxZoomPTR_addon, CurrZoomPTR_addon, tData);
-            }
-            else if (checkSettlersVersion(sADK)) {
-                showMessage("Found ADK version.");
-                bSupported = true;
+        if (checkSettlersII(sADK) && checkSettlersVersion(sADK)) {
+            showMessage("Found ADK version.");
+            bSupported = true;
 
-                if (tData->bBannerPatch)
-                    AdKBannerPatch(tData);
-
-                return MainLoop(WorldObjectPTR_adk, MaxZoomPTR_adk, CurrZoomPTR_adk, tData);
-            }
+            return MainLoop(WorldObjectPTR, MaxZoomPTR, CurrZoomPTR, tData);
         }
         showMessage("retrying...");
         Sleep(2000);
