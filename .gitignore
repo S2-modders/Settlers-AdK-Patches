@@ -1,2 +1,12 @@
 .directory
 *.zip
+*.pdb
+*.lib
+*.exp
+*.dll
+
+pre*
+app*.yml
+VersionInfo*
+
+src/build/
