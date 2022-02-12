@@ -218,18 +218,22 @@ bool calcNewZoomValue(int& hor, int& vert, float& zoom_value, bool wideview) {
         /* maxZoomValue will be set depending on the Aspect Ratio of the screen */
         if (wideview) {
             if (aspr < 1.5f) {
-                zoom_value = 6.0f;
+                zoom_value = 5.0f;
                 return true;
             }
             else if (aspr < 1.9f) {
+                zoom_value = 6.0f;
+                return true;
+            }
+            else if (aspr < 2.2f) {
                 zoom_value = 7.0f;
                 return true;
             }
-            else if (aspr < 2.6f) {
+            else if (aspr < 2.5f) {
                 zoom_value = 8.0f;
                 return true;
             }
-            else if (aspr >= 2.6f) {
+            else if (aspr >= 2.5f) {
                 zoom_value = 9.0f;
                 return true;
             }
@@ -250,19 +254,23 @@ bool calcNewZoomValue(int& hor, int& vert, float& zoom_value, bool wideview) {
                 zoom_value = 6.0f;
                 return true;
             }
-            else if (aspr < 2.6f) {
+            else if (aspr < 2.5f) {
                 zoom_value = 7.0f;
                 return true;
             }
-            else if (aspr >= 2.6f) {
-                zoom_value = 7.0f;
+            else if (aspr < 3.2f) {
+                zoom_value = 8.0f;
+                return true;
+            }
+            else if (aspr >= 3.2f) {
+                zoom_value = 9.0f;
                 return true;
             }
             else {
                 return false;
             }
         }
-
+        
         return true;
     }
     else {
