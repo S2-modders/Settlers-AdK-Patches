@@ -13,28 +13,50 @@
 /* memory values */
 
 /* RoC / AdK (34688) */
-memoryPTR MaxZoomPTR = {
+memoryPTR MaxZoomPTRSR = {
     0x0048CD54,
     2,
     { 0x50, 0x2E4 }
 };
-memoryPTR CurrZoomPTR = {
+memoryPTR CurrZoomPTRSR = {
     0x0048CD54,
     2,
     { 0x50, 0x2E0 }
 };
-memoryPTR WorldObjectPTR = {
+memoryPTR WorldObjectPTRSR = {
     0x0048CD54,
     1,
     { 0x50 }
 };
 
-/* AdK Banner */
-DWORD ADKBannerURL1 = 0x104513;
-DWORD ADKBannerURL2 = 0x104592;
-DWORD ADKBannerURL3 = 0x104602;
+memoryPTR MaxZoomPTR = {
+    0x00485754,
+    2,
+    { 0x50, 0x2E4 }
+};
+memoryPTR CurrZoomPTR = {
+    0x00485754,
+    2,
+    { 0x50, 0x2E0 }
+};
+memoryPTR WorldObjectPTR = {
+    0x00485754,
+    1,
+    { 0x50 }
+};
 
-DWORD ADKGameVersionAddr = 0x495800;
+/* AdK Banner */
+DWORD ADKBannerURL1SR = 0x104513;
+DWORD ADKBannerURL2SR = 0x104592;
+DWORD ADKBannerURL3SR = 0x104602;
+
+DWORD ADKBannerURL1 = 0x1046C3;
+DWORD ADKBannerURL2 = 0x104742;
+DWORD ADKBannerURL3 = 0x1047B2;
+
+DWORD ADKSecuromString      = 0x3F9;
+DWORD ADKGameVersionAddrSR  = 0x495800;
+DWORD ADKGameVersionAddr    = 0x48E1A0;
 
 /*###################################*/
 
@@ -135,6 +157,19 @@ void startupMessage() {
     std::cout << "ZoomPatch by zocker_160 - Version: v" << version_maj << "." << version_min << "\n";
     std::cout << "Debug mode enabled!\n";
     std::cout << "Waiting for application startup...\n";
+}
+
+bool isSecuromVersion() {
+    char secStr[] = "securom";
+    char secStrExe[8];
+
+    memcpy(secStrExe, (char*)calcAddress(ADKSecuromString), 7);
+    secStrExe[7] = 0;
+
+    showMessage("SecuromStrExe:");
+    showMessage(secStrExe);
+
+    return strcmp(secStrExe, secStr) == 0;
 }
 
 bool checkSettlersII(char* versionString) {
@@ -238,10 +273,24 @@ bool calcNewZoomValue(int& hor, int& vert, float& zoom_value, bool wideview) {
     }
 }
 
-void AdKBannerPatch(threadData* tData) {
-    char** sURL1 = (char**)((DWORD)getBaseAddress() + ADKBannerURL1);
-    char** sURL2 = (char**)((DWORD)getBaseAddress() + ADKBannerURL2);
-    char** sURL3 = (char**)((DWORD)getBaseAddress() + ADKBannerURL3);
+void AdKBannerPatch(threadData* tData, bool bSecurom) {
+    char** sURL1;
+    char** sURL2;
+    char** sURL3;
+
+    if (bSecurom) {
+        sURL1 = (char**)((DWORD)getBaseAddress() + ADKBannerURL1SR);
+        sURL2 = (char**)((DWORD)getBaseAddress() + ADKBannerURL2SR);
+        sURL3 = (char**)((DWORD)getBaseAddress() + ADKBannerURL3SR);
+    } else {
+        sURL1 = (char**)((DWORD)getBaseAddress() + ADKBannerURL1SR + 0x1B0);
+        sURL2 = (char**)((DWORD)getBaseAddress() + ADKBannerURL2SR + 0x1B0);
+        sURL3 = (char**)((DWORD)getBaseAddress() + ADKBannerURL3SR + 0x1B0);
+    }
+
+    showMessage(*sURL1);
+    showMessage(*sURL2);
+    showMessage(*sURL3);
 
     char* sURL1_new = tData->BannerURL_1;
     char* sURL2_new = tData->BannerURL_2;
@@ -346,22 +395,37 @@ int MainLoop(memoryPTR& WorldObjectPTR,
 
 int MainEntry(threadData* tData) {
     FILE* f;
+    char* sADK;
+    bool bSecurom;
 
     if (tData->bDebugMode) {
         AllocConsole();
         freopen_s(&f, "CONOUT$", "w", stdout);
         startupMessage();
+    }   
+
+    bSecurom = isSecuromVersion();
+
+    /* Check if securom is present */
+    if (bSecurom) {
+        showMessage("Securom version detected");
+    } else {
+        showMessage("no Securom found");
     }
 
     /* Banner patch has to be done as early as possible */
     if (tData->bBannerPatch)
-        AdKBannerPatch(tData);
+        AdKBannerPatch(tData, bSecurom);
 
     /* wait a bit for the application to start up (might crash otherwise) */
     Sleep(2000);
 
     /* check if gameVersion is supported */
-    char* sADK = (char*)((DWORD)getBaseAddress() + ADKGameVersionAddr);
+    if (bSecurom)
+        sADK = (char*)((DWORD)getBaseAddress() + ADKGameVersionAddrSR);
+    else
+        sADK = (char*)((DWORD)getBaseAddress() + ADKGameVersionAddr);
+
     bool bSupported = false;
 
     for (int i = 0; i < 8; i++) {
@@ -369,7 +433,14 @@ int MainEntry(threadData* tData) {
             showMessage("Found ADK version.");
             bSupported = true;
 
-            return MainLoop(WorldObjectPTR, MaxZoomPTR, CurrZoomPTR, tData);
+            /* Check if securom is present */
+            if (bSecurom) {
+                showMessage("Securom version detected");
+                return MainLoop(WorldObjectPTRSR, MaxZoomPTRSR, CurrZoomPTRSR, tData);
+            } else {
+                showMessage("no Securom found");
+                return MainLoop(WorldObjectPTR, MaxZoomPTR, CurrZoomPTR, tData);
+            }
         }
         showMessage("retrying...");
         Sleep(2000);
