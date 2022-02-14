@@ -27,6 +27,6 @@ struct threadData {
 };
 
 const int version_maj = 0;
-const int version_min = 1;
+const int version_min = 2;
 
 DWORD WINAPI ZoomPatchThread(LPVOID param);
