@@ -2,7 +2,11 @@
 Widescreen fix for S2 AdK and some additional fixes
 
 ## Installation
+### Installer
 
+You can use the installer created by KonradAr [uploaded on ModDB](https://www.moddb.com/games/the-settlers-rise-of-cultures/downloads/widescreen-fix-sadk) which also contains a FogFix for all maps.
+
+### Manually
 - download zip from GitHub releases
 - unpack
 - copy `d3d9.ini` and `d3d9.dll` into the `bin` folder of the game
